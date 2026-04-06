@@ -5,7 +5,7 @@ import json
 import pytest
 from httpx import Response
 
-from eve_api import (  # StreamError,
+from eve_api import (
     APIError,
     AuthenticationError,
     EveApiResponse,
@@ -14,6 +14,7 @@ from eve_api import (  # StreamError,
     NotAuthenticatedError,
     NotFoundError,
     ServerError,
+    StreamError,
     ValidationError,
 )
 
@@ -317,6 +318,24 @@ async def test_422_raises_api_error(mock_api, authenticated_client: EVEClient):
     assert exc_info.value.status_code == random_error
 
 
+async def test_response_invalid_json_raises_api_error(
+    mock_api, authenticated_client: EVEClient
+):
+    """Test that invalid JSON in the response raises APIError"""
+    random_error = 452
+    mock_api.post("/conversations").mock(
+        return_value=Response(
+            random_error,
+            json="Some invalid JSON",
+        )
+    )
+
+    with pytest.raises(APIError) as exc_info:
+        await authenticated_client.post("/conversations", json={})
+
+    assert exc_info.value.status_code == random_error
+
+
 # --- Streaming ---
 
 
@@ -395,6 +414,57 @@ async def test_stream_error_status(mock_api, authenticated_client: EVEClient):
     )
 
     with pytest.raises(APIError):
+        async for _ in authenticated_client.stream(
+            "/conversations/c-1/stream_messages",
+            json={"query": "test"},
+        ):
+            pass
+
+
+async def test_stream_done_no_error(mock_api, authenticated_client: EVEClient):
+    """Test streaming when it returns data: [DONE] with no errors"""
+    events = [
+        {"type": "token", "content": "Hello"},
+        {"type": "token", "content": " world"},
+    ]
+    mock_api.post("/conversations/c-1/stream_messages").mock(
+        return_value=_sse_response(*events)
+    )
+
+    collected = []
+    async for event in authenticated_client.stream(
+        "/conversations/c-1/stream_messages",
+        json={"query": "Hello"},
+    ):
+        collected.append(event)
+
+    # Should stop even if no "final" event
+    assert len(collected) == len(events)
+
+
+async def test_stream_error_invalid_json(
+    mock_api, authenticated_client: EVEClient
+):
+    """Test status from stream error"""
+    events = [
+        {"type": "token", "content": "Hello"},
+        {"type": "token", "content": " world"},
+    ]
+    lines = []
+    for event in events:
+        lines.append(f"data: {json.dumps(event)}\n\n")
+    lines.append("data: Some invalid JSON")
+    body = "".join(lines)
+    response = Response(
+        EveApiResponse.SUCCESS.value,
+        content=body.encode(),
+        headers={"content-type": "text/event-stream"},
+    )
+    mock_api.post("/conversations/c-1/stream_messages").mock(
+        return_value=response
+    )
+
+    with pytest.raises(StreamError):
         async for _ in authenticated_client.stream(
             "/conversations/c-1/stream_messages",
             json={"query": "test"},
