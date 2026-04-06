@@ -6,6 +6,17 @@ Provides login, automatic JWT token refresh, and generic HTTP methods that retur
 
 ## Installation
 
+<!-- 
+```bash
+pip install eve-api
+``` 
+-->
+
+For the development version:
+```bash
+poetry install
+```
+or
 ```bash
 pip install -e ".[dev]"
 ```
