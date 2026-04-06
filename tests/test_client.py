@@ -26,7 +26,7 @@ async def test_login_success(mock_api, client: EVEClient):
     tok = "tok-123"
     mock_api.post("/login").mock(
         return_value=Response(
-            200,
+            EveApiResponse.SUCCESS.value,
             json={
                 "access_token": tok,
                 "refresh_token": "ref-456",
@@ -45,7 +45,7 @@ async def test_login_invalid_credentials(mock_api, client: EVEClient):
     """Test login for invalid credentials raises AuthenticationError"""
     mock_api.post("/login").mock(
         return_value=Response(
-            401,
+            EveApiResponse.INVALID_CREDS.value,
             json={
                 "detail": "Invalid credentials",
             },
@@ -62,7 +62,7 @@ async def test_login_account_not_activated(mock_api, client: EVEClient):
     """Test login for non-activated account raises AuthenticationError"""
     mock_api.post("/login").mock(
         return_value=Response(
-            403,
+            EveApiResponse.FORBIDDEN.value,
             json={
                 "detail": "Account not activated",
             },
@@ -93,7 +93,7 @@ async def test_get(mock_api, authenticated_client: EVEClient):
     user_email = "test@example.com"
     mock_api.get("/users/me").mock(
         return_value=Response(
-            200,
+            EveApiResponse.SUCCESS.value,
             json={
                 "id": user_id,
                 "email": user_email,
@@ -112,7 +112,7 @@ async def test_get_with_params(mock_api, authenticated_client: EVEClient):
     data_name = "Public"
     mock_api.get("/collections/public").mock(
         return_value=Response(
-            200,
+            EveApiResponse.SUCCESS.value,
             json={
                 "data": [{"id": "c-1", "name": data_name}],
                 "meta": {"total_count": 1},
@@ -137,7 +137,7 @@ async def test_post(mock_api, authenticated_client: EVEClient):
     chat_name = "New Chat"
     mock_api.post("/conversations").mock(
         return_value=Response(
-            201,
+            EveApiResponse.SUCCESS_CREATED.value,
             json={
                 "id": chat_id,
                 "name": "New Chat",
@@ -181,7 +181,9 @@ async def test_patch(mock_api, authenticated_client: EVEClient):
 
 async def test_delete(mock_api, authenticated_client: EVEClient):
     """Test deleting a conversation works when a response body is not included"""
-    mock_api.delete("/conversations/conv-1").mock(return_value=Response(204))
+    mock_api.delete("/conversations/conv-1").mock(
+        return_value=Response(EveApiResponse.SUCCESS_NO_CONTENT.value)
+    )
 
     result = await authenticated_client.delete("/conversations/conv-1")
 

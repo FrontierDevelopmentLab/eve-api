@@ -212,7 +212,7 @@ class EVEClient:
         response = await self.request(
             "DELETE", path, params=params, timeout=timeout
         )
-        if response.status_code == EveApiResponse.SUCCESS_NO_RESPONSE.value:
+        if response.status_code == EveApiResponse.SUCCESS_NO_CONTENT.value:
             return None
         return response.json()
 

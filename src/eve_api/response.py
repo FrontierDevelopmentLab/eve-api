@@ -7,7 +7,9 @@ class EveApiResponse(Enum):
     """Response code from EVE API."""
 
     SUCCESS = 200
-    SUCCESS_NO_RESPONSE = 204
+    SUCCESS_CREATED = 201
+    SUCCESS_ACCEPTED = 202
+    SUCCESS_NO_CONTENT = 204
     BAD_REQUEST = 400
     INVALID_CREDS = 401
     FORBIDDEN = 403
