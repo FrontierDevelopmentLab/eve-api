@@ -3,42 +3,53 @@
 import json
 
 import pytest
-import respx
 from httpx import Response
 
-from eve_api import (
+from eve_api import (  # StreamError,
     APIError,
     AuthenticationError,
+    EveApiResponse,
     EVEClient,
     ForbiddenError,
     NotAuthenticatedError,
     NotFoundError,
     ServerError,
-    StreamError,
     ValidationError,
 )
-
 
 # --- Authentication ---
 
 
 async def test_login_success(mock_api, client: EVEClient):
-    mock_api.post("/login").mock(return_value=Response(200, json={
-        "access_token": "tok-123",
-        "refresh_token": "ref-456",
-    }))
+    """Test login success"""
+    tok = "tok-123"
+    mock_api.post("/login").mock(
+        return_value=Response(
+            200,
+            json={
+                "access_token": tok,
+                "refresh_token": "ref-456",
+            },
+        )
+    )
 
     await client.login("user@example.com", "password")
 
     assert client.is_authenticated()
-    assert client.token == "tok-123"
-    assert client.auth_headers == {"Authorization": "Bearer tok-123"}
+    assert client.token == tok
+    assert client.auth_headers == {"Authorization": f"Bearer {tok}"}
 
 
 async def test_login_invalid_credentials(mock_api, client: EVEClient):
-    mock_api.post("/login").mock(return_value=Response(401, json={
-        "detail": "Invalid credentials",
-    }))
+    """Test login for invalid credentials raises AuthenticationError"""
+    mock_api.post("/login").mock(
+        return_value=Response(
+            401,
+            json={
+                "detail": "Invalid credentials",
+            },
+        )
+    )
 
     with pytest.raises(AuthenticationError, match="Invalid email or password"):
         await client.login("bad@example.com", "wrong")
@@ -47,20 +58,28 @@ async def test_login_invalid_credentials(mock_api, client: EVEClient):
 
 
 async def test_login_account_not_activated(mock_api, client: EVEClient):
-    mock_api.post("/login").mock(return_value=Response(403, json={
-        "detail": "Account not activated",
-    }))
+    """Test login for non-activated account raises AuthenticationError"""
+    mock_api.post("/login").mock(
+        return_value=Response(
+            403,
+            json={
+                "detail": "Account not activated",
+            },
+        )
+    )
 
     with pytest.raises(AuthenticationError, match="Account not activated"):
         await client.login("user@example.com", "password")
 
 
 async def test_not_authenticated_error(client: EVEClient):
+    """Test that before login NotAuthenticatedError is raised"""
     with pytest.raises(NotAuthenticatedError):
         await client.get("/users/me")
 
 
 async def test_token_property_none_before_login(client: EVEClient):
+    """Test that the token attribute before login is None"""
     assert client.token is None
 
 
@@ -68,64 +87,99 @@ async def test_token_property_none_before_login(client: EVEClient):
 
 
 async def test_get(mock_api, authenticated_client: EVEClient):
-    mock_api.get("/users/me").mock(return_value=Response(200, json={
-        "id": "user-1",
-        "email": "test@example.com",
-    }))
+    """Test GET"""
+    user_id = "user-1"
+    user_email = "test@example.com"
+    mock_api.get("/users/me").mock(
+        return_value=Response(
+            200,
+            json={
+                "id": user_id,
+                "email": user_email,
+            },
+        )
+    )
 
     data = await authenticated_client.get("/users/me")
 
-    assert data["id"] == "user-1"
-    assert data["email"] == "test@example.com"
+    assert data["id"] == user_id
+    assert data["email"] == user_email
 
 
 async def test_get_with_params(mock_api, authenticated_client: EVEClient):
-    mock_api.get("/collections/public").mock(return_value=Response(200, json={
-        "data": [{"id": "c-1", "name": "Public"}],
-        "meta": {"total_count": 1},
-    }))
+    """Test GET with params"""
+    data_name = "Public"
+    mock_api.get("/collections/public").mock(
+        return_value=Response(
+            200,
+            json={
+                "data": [{"id": "c-1", "name": data_name}],
+                "meta": {"total_count": 1},
+            },
+        )
+    )
 
-    data = await authenticated_client.get("/collections/public", params={"page": 1})
+    data = await authenticated_client.get(
+        "/collections/public", params={"page": 1}
+    )
 
     assert len(data["data"]) == 1
-    assert data["data"][0]["name"] == "Public"
+    assert data["data"][0]["name"] == data_name
 
 
 # --- POST ---
 
 
 async def test_post(mock_api, authenticated_client: EVEClient):
-    mock_api.post("/conversations").mock(return_value=Response(201, json={
-        "id": "conv-1",
-        "name": "New Chat",
-    }))
+    """Test POST"""
+    chat_id = "conv-1"
+    chat_name = "New Chat"
+    mock_api.post("/conversations").mock(
+        return_value=Response(
+            201,
+            json={
+                "id": chat_id,
+                "name": "New Chat",
+            },
+        )
+    )
 
-    data = await authenticated_client.post("/conversations", json={"name": "New Chat"})
+    data = await authenticated_client.post(
+        "/conversations", json={"name": chat_name}
+    )
 
-    assert data["id"] == "conv-1"
-    assert data["name"] == "New Chat"
+    assert data["id"] == chat_id
+    assert data["name"] == chat_name
 
 
 # --- PATCH ---
 
 
 async def test_patch(mock_api, authenticated_client: EVEClient):
-    mock_api.patch("/conversations/conv-1").mock(return_value=Response(200, json={
-        "id": "conv-1",
-        "name": "Renamed",
-    }))
-
-    data = await authenticated_client.patch(
-        "/conversations/conv-1", json={"name": "Renamed"}
+    """Test PATCH"""
+    new_name = "Renamed"
+    mock_api.patch("/conversations/conv-1").mock(
+        return_value=Response(
+            EveApiResponse.SUCCESS.value,
+            json={
+                "id": "conv-1",
+                "name": new_name,
+            },
+        )
     )
 
-    assert data["name"] == "Renamed"
+    data = await authenticated_client.patch(
+        "/conversations/conv-1", json={"name": new_name}
+    )
+
+    assert data["name"] == new_name
 
 
 # --- DELETE ---
 
 
 async def test_delete(mock_api, authenticated_client: EVEClient):
+    """Test deleting a conversation works when a response body is not included"""
     mock_api.delete("/conversations/conv-1").mock(return_value=Response(204))
 
     result = await authenticated_client.delete("/conversations/conv-1")
@@ -134,9 +188,15 @@ async def test_delete(mock_api, authenticated_client: EVEClient):
 
 
 async def test_delete_with_body(mock_api, authenticated_client: EVEClient):
-    mock_api.delete("/conversations/conv-1").mock(return_value=Response(200, json={
-        "deleted": True,
-    }))
+    """Test deleting a conversation works when including a response body"""
+    mock_api.delete("/conversations/conv-1").mock(
+        return_value=Response(
+            EveApiResponse.SUCCESS.value,
+            json={
+                "deleted": True,
+            },
+        )
+    )
 
     result = await authenticated_client.delete("/conversations/conv-1")
 
@@ -147,62 +207,114 @@ async def test_delete_with_body(mock_api, authenticated_client: EVEClient):
 
 
 async def test_request_no_auth(mock_api, client: EVEClient):
-    mock_api.get("/health").mock(return_value=Response(200, json={"status": "ok"}))
+    """Test EVEClient when auth_required=False"""
+    status = "ok"
+    mock_api.get("/health").mock(
+        return_value=Response(
+            EveApiResponse.SUCCESS.value, json={"status": status}
+        )
+    )
 
     response = await client.request("GET", "/health", auth_required=False)
 
-    assert response.status_code == 200
-    assert response.json()["status"] == "ok"
+    assert response.status_code == EveApiResponse.SUCCESS.value
+    assert response.json()["status"] == status
 
 
 # --- Error handling ---
 
 
 async def test_404_raises_not_found(mock_api, authenticated_client: EVEClient):
-    mock_api.get("/conversations/missing").mock(return_value=Response(404, json={
-        "detail": "Not found",
-    }))
+    """Test that 404 response code raises NotFoundError"""
+    mock_api.get("/conversations/missing").mock(
+        return_value=Response(
+            EveApiResponse.NOT_FOUND.value,
+            json={
+                "detail": "Not found",
+            },
+        )
+    )
 
-    with pytest.raises(NotFoundError):
+    with pytest.raises(NotFoundError) as exc_info:
         await authenticated_client.get("/conversations/missing")
+
+    assert exc_info.value.status_code == EveApiResponse.NOT_FOUND.value
 
 
 async def test_403_raises_forbidden(mock_api, authenticated_client: EVEClient):
-    mock_api.get("/admin/users").mock(return_value=Response(403, json={
-        "detail": "Forbidden",
-    }))
+    """Test that 403 response code raises ForbiddenError"""
+    mock_api.get("/admin/users").mock(
+        return_value=Response(
+            EveApiResponse.FORBIDDEN.value,
+            json={
+                "detail": "Forbidden",
+            },
+        )
+    )
 
-    with pytest.raises(ForbiddenError):
+    with pytest.raises(ForbiddenError) as exc_info:
         await authenticated_client.get("/admin/users")
 
+    assert exc_info.value.status_code == EveApiResponse.FORBIDDEN.value
 
-async def test_400_raises_validation_error(mock_api, authenticated_client: EVEClient):
-    mock_api.post("/conversations").mock(return_value=Response(400, json={
-        "detail": "name is required",
-    }))
 
-    with pytest.raises(ValidationError, match="name is required"):
+async def test_400_raises_validation_error(
+    mock_api, authenticated_client: EVEClient
+):
+    """Test that 400 response code raises ValidationError"""
+    mock_api.post("/conversations").mock(
+        return_value=Response(
+            EveApiResponse.BAD_REQUEST.value,
+            json={
+                "detail": "name is required",
+            },
+        )
+    )
+
+    with pytest.raises(ValidationError, match="name is required") as exc_info:
         await authenticated_client.post("/conversations", json={})
 
+    assert exc_info.value.status_code == EveApiResponse.BAD_REQUEST.value
 
-async def test_500_raises_server_error(mock_api, authenticated_client: EVEClient):
-    mock_api.get("/broken").mock(return_value=Response(500, json={
-        "detail": "Internal server error",
-    }))
 
-    with pytest.raises(ServerError):
+async def test_500_raises_server_error(
+    mock_api, authenticated_client: EVEClient
+):
+    """Test that 500 response code raises ServerError"""
+    mock_api.get("/broken").mock(
+        return_value=Response(
+            EveApiResponse.INTERNAL_SERVER_ERROR.value,
+            json={
+                "detail": "Internal server error",
+            },
+        )
+    )
+
+    with pytest.raises(ServerError) as exc_info:
         await authenticated_client.get("/broken")
+
+    assert (
+        exc_info.value.status_code
+        == EveApiResponse.INTERNAL_SERVER_ERROR.value
+    )
 
 
 async def test_422_raises_api_error(mock_api, authenticated_client: EVEClient):
-    mock_api.post("/conversations").mock(return_value=Response(422, json={
-        "detail": [{"msg": "field required", "type": "missing"}],
-    }))
+    """Test that 422 response code raises APIError"""
+    random_error = 422
+    mock_api.post("/conversations").mock(
+        return_value=Response(
+            random_error,
+            json={
+                "detail": [{"msg": "field required", "type": "missing"}],
+            },
+        )
+    )
 
     with pytest.raises(APIError) as exc_info:
         await authenticated_client.post("/conversations", json={})
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == random_error
 
 
 # --- Streaming ---
@@ -217,18 +329,21 @@ def _sse_response(*events: dict, done: bool = True) -> Response:
         lines.append("data: [DONE]\n\n")
     body = "".join(lines)
     return Response(
-        200,
+        EveApiResponse.SUCCESS.value,
         content=body.encode(),
         headers={"content-type": "text/event-stream"},
     )
 
 
 async def test_stream(mock_api, authenticated_client: EVEClient):
+    """Test streaming"""
+    status_text = "status"
+    final_text = "final"
     events = [
-        {"type": "status", "content": "Searching..."},
+        {"type": status_text, "content": "Searching..."},
         {"type": "token", "content": "Hello"},
         {"type": "token", "content": " world"},
-        {"type": "final", "content": "Hello world", "message_id": "m-1"},
+        {"type": final_text, "content": "Hello world", "message_id": "m-1"},
     ]
     mock_api.post("/conversations/c-1/stream_messages").mock(
         return_value=_sse_response(*events)
@@ -242,15 +357,19 @@ async def test_stream(mock_api, authenticated_client: EVEClient):
         collected.append(event)
 
     # Should stop after "final" event
-    assert len(collected) == 4
-    assert collected[0]["type"] == "status"
-    assert collected[-1]["type"] == "final"
+    assert len(collected) == len(events)
+    assert collected[0]["type"] == status_text
+    assert collected[-1]["type"] == final_text
 
 
-async def test_stream_stops_on_error_event(mock_api, authenticated_client: EVEClient):
+async def test_stream_stops_on_error_event(
+    mock_api, authenticated_client: EVEClient
+):
+    """Test that streaming stops on an error event"""
+    error_text = "error"
     events = [
         {"type": "token", "content": "partial"},
-        {"type": "error", "content": "Something went wrong"},
+        {"type": error_text, "content": "Something went wrong"},
     ]
     mock_api.post("/conversations/c-1/stream_messages").mock(
         return_value=_sse_response(*events, done=False)
@@ -263,13 +382,16 @@ async def test_stream_stops_on_error_event(mock_api, authenticated_client: EVECl
     ):
         collected.append(event)
 
-    assert len(collected) == 2
-    assert collected[-1]["type"] == "error"
+    assert len(collected) == len(events)
+    assert collected[-1]["type"] == error_text
 
 
 async def test_stream_error_status(mock_api, authenticated_client: EVEClient):
+    """Test status from stream error"""
     mock_api.post("/conversations/c-1/stream_messages").mock(
-        return_value=Response(401, json={"detail": "Unauthorized"})
+        return_value=Response(
+            EveApiResponse.INVALID_CREDS.value, json={"detail": "Unauthorized"}
+        )
     )
 
     with pytest.raises(APIError):
@@ -284,16 +406,18 @@ async def test_stream_error_status(mock_api, authenticated_client: EVEClient):
 
 
 async def test_context_manager(base_url: str):
+    """Test the EVEClient as a context manager"""
     async with EVEClient(base_url) as eve:
-        assert eve._http is not None
+        assert eve._http is not None  # pylint:disable=protected-access
 
-    assert eve._http is None
+    assert eve._http is None  # pylint:disable=protected-access
 
 
 async def test_close(base_url: str):
+    """Test closing the EVEClient"""
     eve = EVEClient(base_url)
-    await eve._ensure_http_client()
-    assert eve._http is not None
+    await eve._ensure_http_client()  # pylint:disable=protected-access
+    assert eve._http is not None  # pylint:disable=protected-access
 
     await eve.close()
-    assert eve._http is None
+    assert eve._http is None  # pylint:disable=protected-access

@@ -68,14 +68,8 @@ repos:
         - "--skip-covered"
         - "--show-missing"
     - id: sphinx-docs
-      name: Build Sphinx docs (GeoSTARS)
-      entry: bash -c 'command -v sphinx-build >/dev/null 2>&1 && poetry run sphinx-build -b html lib/geostars/docs _build/html/geostars || echo "sphinx-build not found, skipping"'
-      language: system
-      pass_filenames: false
-      always_run: true
-    - id: sphinx-docs-orchestrator
-      name: Build Sphinx docs (STARS)
-      entry: bash -c 'command -v sphinx-build >/dev/null 2>&1 && poetry run sphinx-build -b html src/stars/docs _build/html/orchestrator || echo "sphinx-build not found, skipping"'
+      name: Build Sphinx docs
+      entry: bash -c 'command -v sphinx-build >/dev/null 2>&1 && poetry run sphinx-build -b html src/eve_api/docs _build/html/eve_api || echo "sphinx-build not found, skipping"'
       language: system
       pass_filenames: false
       always_run: true

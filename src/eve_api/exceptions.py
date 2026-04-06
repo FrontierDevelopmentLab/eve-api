@@ -4,11 +4,15 @@ from __future__ import annotations
 
 from typing import Any
 
+from .response import EveApiResponse
+
 
 class EVEError(Exception):
     """Base exception for all EVE API client errors."""
 
-    def __init__(self, message: str, details: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self, message: str, details: dict[str, Any] | None = None
+    ) -> None:
         """Initialise the error.
 
         Args:
@@ -23,19 +27,13 @@ class EVEError(Exception):
 class AuthenticationError(EVEError):
     """Raised when authentication fails."""
 
-    pass
-
 
 class TokenExpiredError(AuthenticationError):
     """Raised when the access token has expired and refresh failed."""
 
-    pass
-
 
 class NotAuthenticatedError(AuthenticationError):
     """Raised when attempting an operation that requires authentication."""
-
-    pass
 
 
 class APIError(EVEError):
@@ -70,7 +68,7 @@ class NotFoundError(APIError):
         """
         super().__init__(
             f"{resource.title()} not found: {resource_id}",
-            status_code=404,
+            status_code=EveApiResponse.NOT_FOUND.value,
             details={"resource": resource, "id": resource_id},
         )
 
@@ -84,20 +82,26 @@ class ForbiddenError(APIError):
         Args:
             message: Human-readable error message.
         """
-        super().__init__(message, status_code=403)
+        super().__init__(message, status_code=EveApiResponse.FORBIDDEN.value)
 
 
 class ValidationError(APIError):
     """Raised when request validation fails (400)."""
 
-    def __init__(self, message: str, details: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self, message: str, details: dict[str, Any] | None = None
+    ) -> None:
         """Initialise the validation error.
 
         Args:
             message: Human-readable error message.
             details: Validation error details.
         """
-        super().__init__(message, status_code=400, details=details)
+        super().__init__(
+            message,
+            status_code=EveApiResponse.BAD_REQUEST.value,
+            details=details,
+        )
 
 
 class ServerError(APIError):
@@ -106,7 +110,7 @@ class ServerError(APIError):
     def __init__(
         self,
         message: str = "Internal server error",
-        status_code: int = 500,
+        status_code: int = EveApiResponse.INTERNAL_SERVER_ERROR.value,
         details: dict[str, Any] | None = None,
     ) -> None:
         """Initialise the server error.
@@ -121,5 +125,3 @@ class ServerError(APIError):
 
 class StreamError(EVEError):
     """Raised when an error occurs during streaming."""
-
-    pass
