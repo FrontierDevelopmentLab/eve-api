@@ -4,7 +4,7 @@ import pytest
 import respx
 from httpx import Response
 
-from eve_api import EVEClient
+from eve_api import EveApiResponse, EVEClient
 
 
 @pytest.fixture
@@ -34,7 +34,7 @@ async def authenticated_client(
     """Create an authenticated EVE client for testing."""
     mock_api.post("/login").mock(
         return_value=Response(
-            200,
+            EveApiResponse.SUCCESS.value,
             json={
                 "access_token": "test-access-token",
                 "refresh_token": "test-refresh-token",
