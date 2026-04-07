@@ -445,8 +445,6 @@ disable=raw-checker-failed,
 enable=
 
 per-file-ignores =
-    src/stars/mcp_servers/python_toolbox/**:duplicate-code,
-    src/stars/docs/conf.py:invalid-name
 
 [METHOD_ARGS]
 
