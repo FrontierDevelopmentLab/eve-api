@@ -299,10 +299,10 @@ async def test_500_raises_server_error(
 
 async def test_422_raises_api_error(mock_api, authenticated_client: EVEClient):
     """Test that 422 response code raises APIError"""
-    random_error = 422
+    unprocessable_entity = 422
     mock_api.post("/conversations").mock(
         return_value=Response(
-            random_error,
+            unprocessable_entity,
             json={
                 "detail": [{"msg": "field required", "type": "missing"}],
             },
@@ -312,17 +312,17 @@ async def test_422_raises_api_error(mock_api, authenticated_client: EVEClient):
     with pytest.raises(APIError) as exc_info:
         await authenticated_client.post("/conversations", json={})
 
-    assert exc_info.value.status_code == random_error
+    assert exc_info.value.status_code == unprocessable_entity
 
 
-async def test_response_invalid_json_raises_api_error(
+async def test_response_missing_detail_raises_api_error(
     mock_api, authenticated_client: EVEClient
 ):
-    """Test that invalid JSON in the response raises APIError"""
-    random_error = 452
+    """Test that error response without 'detail' key raises APIError"""
+    unknown_error = 452
     mock_api.post("/conversations").mock(
         return_value=Response(
-            random_error,
+            unknown_error,
             json="Some invalid JSON",
         )
     )
@@ -330,7 +330,7 @@ async def test_response_invalid_json_raises_api_error(
     with pytest.raises(APIError) as exc_info:
         await authenticated_client.post("/conversations", json={})
 
-    assert exc_info.value.status_code == random_error
+    assert exc_info.value.status_code == unknown_error
 
 
 # --- Streaming ---
