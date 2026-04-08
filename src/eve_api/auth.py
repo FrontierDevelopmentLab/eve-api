@@ -7,12 +7,13 @@ from typing import Any
 
 import httpx
 
+from http import HTTPStatus
+
 from .exceptions import (
     AuthenticationError,
     NotAuthenticatedError,
     TokenExpiredError,
 )
-from .response import EveApiResponse
 
 
 class EVEAuth:
@@ -86,11 +87,11 @@ class EVEAuth:
                 json={"email": email, "password": password},
             )
 
-            if response.status_code == EveApiResponse.INVALID_CREDS.value:
+            if response.status_code == HTTPStatus.UNAUTHORIZED:
                 raise AuthenticationError("Invalid email or password")
-            if response.status_code == EveApiResponse.FORBIDDEN.value:
+            if response.status_code == HTTPStatus.FORBIDDEN:
                 raise AuthenticationError("Account not activated")
-            if response.status_code != EveApiResponse.SUCCESS.value:
+            if response.status_code != HTTPStatus.OK:
                 self._handle_error_response(response)
 
             data = response.json()
@@ -121,7 +122,7 @@ class EVEAuth:
                 json={"refresh_token": self.refresh_token},
             )
 
-            if response.status_code == EveApiResponse.INVALID_CREDS.value:
+            if response.status_code == HTTPStatus.UNAUTHORIZED:
                 # Refresh token expired
                 self.access_token = None
                 self.refresh_token = None
@@ -129,7 +130,7 @@ class EVEAuth:
                 raise TokenExpiredError(
                     "Refresh token expired. Please login again."
                 )
-            if response.status_code != EveApiResponse.SUCCESS.value:
+            if response.status_code != HTTPStatus.OK:
                 self._handle_error_response(response)
 
             data = response.json()

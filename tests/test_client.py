@@ -5,10 +5,11 @@ import json
 import pytest
 from httpx import Response
 
+from http import HTTPStatus
+
 from eve_api import (
     APIError,
     AuthenticationError,
-    EveApiResponse,
     EVEClient,
     ForbiddenError,
     NotAuthenticatedError,
@@ -26,7 +27,7 @@ async def test_login_success(mock_api, client: EVEClient):
     tok = "tok-123"
     mock_api.post("/login").mock(
         return_value=Response(
-            EveApiResponse.SUCCESS.value,
+            HTTPStatus.OK,
             json={
                 "access_token": tok,
                 "refresh_token": "ref-456",
@@ -45,7 +46,7 @@ async def test_login_invalid_credentials(mock_api, client: EVEClient):
     """Test login for invalid credentials raises AuthenticationError"""
     mock_api.post("/login").mock(
         return_value=Response(
-            EveApiResponse.INVALID_CREDS.value,
+            HTTPStatus.UNAUTHORIZED,
             json={
                 "detail": "Invalid credentials",
             },
@@ -62,7 +63,7 @@ async def test_login_account_not_activated(mock_api, client: EVEClient):
     """Test login for non-activated account raises AuthenticationError"""
     mock_api.post("/login").mock(
         return_value=Response(
-            EveApiResponse.FORBIDDEN.value,
+            HTTPStatus.FORBIDDEN,
             json={
                 "detail": "Account not activated",
             },
@@ -93,7 +94,7 @@ async def test_get(mock_api, authenticated_client: EVEClient):
     user_email = "test@example.com"
     mock_api.get("/users/me").mock(
         return_value=Response(
-            EveApiResponse.SUCCESS.value,
+            HTTPStatus.OK,
             json={
                 "id": user_id,
                 "email": user_email,
@@ -112,7 +113,7 @@ async def test_get_with_params(mock_api, authenticated_client: EVEClient):
     data_name = "Public"
     mock_api.get("/collections/public").mock(
         return_value=Response(
-            EveApiResponse.SUCCESS.value,
+            HTTPStatus.OK,
             json={
                 "data": [{"id": "c-1", "name": data_name}],
                 "meta": {"total_count": 1},
@@ -137,7 +138,7 @@ async def test_post(mock_api, authenticated_client: EVEClient):
     chat_name = "New Chat"
     mock_api.post("/conversations").mock(
         return_value=Response(
-            EveApiResponse.SUCCESS_CREATED.value,
+            HTTPStatus.CREATED,
             json={
                 "id": chat_id,
                 "name": "New Chat",
@@ -161,7 +162,7 @@ async def test_patch(mock_api, authenticated_client: EVEClient):
     new_name = "Renamed"
     mock_api.patch("/conversations/conv-1").mock(
         return_value=Response(
-            EveApiResponse.SUCCESS.value,
+            HTTPStatus.OK,
             json={
                 "id": "conv-1",
                 "name": new_name,
@@ -182,7 +183,7 @@ async def test_patch(mock_api, authenticated_client: EVEClient):
 async def test_delete(mock_api, authenticated_client: EVEClient):
     """Test deleting a conversation works when a response body is not included"""
     mock_api.delete("/conversations/conv-1").mock(
-        return_value=Response(EveApiResponse.SUCCESS_NO_CONTENT.value)
+        return_value=Response(HTTPStatus.NO_CONTENT)
     )
 
     result = await authenticated_client.delete("/conversations/conv-1")
@@ -194,7 +195,7 @@ async def test_delete_with_body(mock_api, authenticated_client: EVEClient):
     """Test deleting a conversation works when including a response body"""
     mock_api.delete("/conversations/conv-1").mock(
         return_value=Response(
-            EveApiResponse.SUCCESS.value,
+            HTTPStatus.OK,
             json={
                 "deleted": True,
             },
@@ -214,13 +215,13 @@ async def test_request_no_auth(mock_api, client: EVEClient):
     status = "ok"
     mock_api.get("/health").mock(
         return_value=Response(
-            EveApiResponse.SUCCESS.value, json={"status": status}
+            HTTPStatus.OK, json={"status": status}
         )
     )
 
     response = await client.request("GET", "/health", auth_required=False)
 
-    assert response.status_code == EveApiResponse.SUCCESS.value
+    assert response.status_code == HTTPStatus.OK
     assert response.json()["status"] == status
 
 
@@ -231,7 +232,7 @@ async def test_404_raises_not_found(mock_api, authenticated_client: EVEClient):
     """Test that 404 response code raises NotFoundError"""
     mock_api.get("/conversations/missing").mock(
         return_value=Response(
-            EveApiResponse.NOT_FOUND.value,
+            HTTPStatus.NOT_FOUND,
             json={
                 "detail": "Not found",
             },
@@ -241,14 +242,14 @@ async def test_404_raises_not_found(mock_api, authenticated_client: EVEClient):
     with pytest.raises(NotFoundError) as exc_info:
         await authenticated_client.get("/conversations/missing")
 
-    assert exc_info.value.status_code == EveApiResponse.NOT_FOUND.value
+    assert exc_info.value.status_code == HTTPStatus.NOT_FOUND
 
 
 async def test_403_raises_forbidden(mock_api, authenticated_client: EVEClient):
     """Test that 403 response code raises ForbiddenError"""
     mock_api.get("/admin/users").mock(
         return_value=Response(
-            EveApiResponse.FORBIDDEN.value,
+            HTTPStatus.FORBIDDEN,
             json={
                 "detail": "Forbidden",
             },
@@ -258,7 +259,7 @@ async def test_403_raises_forbidden(mock_api, authenticated_client: EVEClient):
     with pytest.raises(ForbiddenError) as exc_info:
         await authenticated_client.get("/admin/users")
 
-    assert exc_info.value.status_code == EveApiResponse.FORBIDDEN.value
+    assert exc_info.value.status_code == HTTPStatus.FORBIDDEN
 
 
 async def test_400_raises_validation_error(
@@ -267,7 +268,7 @@ async def test_400_raises_validation_error(
     """Test that 400 response code raises ValidationError"""
     mock_api.post("/conversations").mock(
         return_value=Response(
-            EveApiResponse.BAD_REQUEST.value,
+            HTTPStatus.BAD_REQUEST,
             json={
                 "detail": "name is required",
             },
@@ -277,7 +278,7 @@ async def test_400_raises_validation_error(
     with pytest.raises(ValidationError, match="name is required") as exc_info:
         await authenticated_client.post("/conversations", json={})
 
-    assert exc_info.value.status_code == EveApiResponse.BAD_REQUEST.value
+    assert exc_info.value.status_code == HTTPStatus.BAD_REQUEST
 
 
 async def test_500_raises_server_error(
@@ -286,7 +287,7 @@ async def test_500_raises_server_error(
     """Test that 500 response code raises ServerError"""
     mock_api.get("/broken").mock(
         return_value=Response(
-            EveApiResponse.INTERNAL_SERVER_ERROR.value,
+            HTTPStatus.INTERNAL_SERVER_ERROR,
             json={
                 "detail": "Internal server error",
             },
@@ -298,7 +299,7 @@ async def test_500_raises_server_error(
 
     assert (
         exc_info.value.status_code
-        == EveApiResponse.INTERNAL_SERVER_ERROR.value
+        == HTTPStatus.INTERNAL_SERVER_ERROR
     )
 
 
@@ -350,7 +351,7 @@ def _sse_response(*events: dict, done: bool = True) -> Response:
         lines.append("data: [DONE]\n\n")
     body = "".join(lines)
     return Response(
-        EveApiResponse.SUCCESS.value,
+        HTTPStatus.OK,
         content=body.encode(),
         headers={"content-type": "text/event-stream"},
     )
@@ -411,7 +412,7 @@ async def test_stream_error_status(mock_api, authenticated_client: EVEClient):
     """Test status from stream error"""
     mock_api.post("/conversations/c-1/stream_messages").mock(
         return_value=Response(
-            EveApiResponse.INVALID_CREDS.value, json={"detail": "Unauthorized"}
+            HTTPStatus.UNAUTHORIZED, json={"detail": "Unauthorized"}
         )
     )
 
@@ -458,7 +459,7 @@ async def test_stream_error_invalid_json(
     lines.append("data: Some invalid JSON")
     body = "".join(lines)
     response = Response(
-        EveApiResponse.SUCCESS.value,
+        HTTPStatus.OK,
         content=body.encode(),
         headers={"content-type": "text/event-stream"},
     )

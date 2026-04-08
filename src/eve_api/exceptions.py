@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .response import EveApiResponse
+from http import HTTPStatus
 
 
 class EVEError(Exception):
@@ -68,7 +68,7 @@ class NotFoundError(APIError):
         """
         super().__init__(
             f"{resource.title()} not found: {resource_id}",
-            status_code=EveApiResponse.NOT_FOUND.value,
+            status_code=HTTPStatus.NOT_FOUND,
             details={"resource": resource, "id": resource_id},
         )
 
@@ -82,7 +82,7 @@ class ForbiddenError(APIError):
         Args:
             message: Human-readable error message.
         """
-        super().__init__(message, status_code=EveApiResponse.FORBIDDEN.value)
+        super().__init__(message, status_code=HTTPStatus.FORBIDDEN)
 
 
 class ValidationError(APIError):
@@ -99,7 +99,7 @@ class ValidationError(APIError):
         """
         super().__init__(
             message,
-            status_code=EveApiResponse.BAD_REQUEST.value,
+            status_code=HTTPStatus.BAD_REQUEST,
             details=details,
         )
 
@@ -110,7 +110,7 @@ class ServerError(APIError):
     def __init__(
         self,
         message: str = "Internal server error",
-        status_code: int = EveApiResponse.INTERNAL_SERVER_ERROR.value,
+        status_code: int = HTTPStatus.INTERNAL_SERVER_ERROR,
         details: dict[str, Any] | None = None,
     ) -> None:
         """Initialise the server error.

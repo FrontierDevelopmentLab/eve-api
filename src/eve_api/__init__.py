@@ -14,15 +14,12 @@ from .exceptions import (
     TokenExpiredError,
     ValidationError,
 )
-from .response import EveApiResponse
-
 __all__ = [
     "__version__",
     "EVEClient",
     "EVEError",
     "APIError",
     "AuthenticationError",
-    "EveApiResponse",
     "ForbiddenError",
     "NotAuthenticatedError",
     "NotFoundError",

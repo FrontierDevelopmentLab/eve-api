@@ -6,9 +6,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
+from http import HTTPStatus
+
 from eve_api.auth import (
     AuthenticationError,
-    EveApiResponse,
     EVEAuth,
     NotAuthenticatedError,
     TokenExpiredError,
@@ -87,7 +88,7 @@ class TestLogin:
     async def test_login_unexpected_status_calls_handle_error():
         """A non-success, non-401, non-403 status code triggers _handle_error_response."""
         auth = make_auth()
-        response = make_response(EveApiResponse.INTERNAL_SERVER_ERROR.value)
+        response = make_response(HTTPStatus.INTERNAL_SERVER_ERROR)
 
         mock_client = AsyncMock(spec=httpx.AsyncClient)
         mock_client.post.return_value = response
@@ -113,7 +114,7 @@ class TestLogin:
             http_client=None
         )  # no persistent client → should_close = True
         response = make_response(
-            EveApiResponse.SUCCESS.value,
+            HTTPStatus.OK,
             json_data={"access_token": "tok", "refresh_token": "ref"},
         )
 
@@ -130,7 +131,7 @@ class TestLogin:
     async def test_login_closes_temporary_client_on_error():
         """The temporary client is closed even when login raises an exception."""
         auth = make_auth(http_client=None)
-        response = make_response(EveApiResponse.INVALID_CREDS.value)
+        response = make_response(HTTPStatus.UNAUTHORIZED)
 
         mock_client = AsyncMock(spec=httpx.AsyncClient)
         mock_client.post.return_value = response
@@ -148,7 +149,7 @@ class TestLogin:
         persistent = AsyncMock(spec=httpx.AsyncClient)
         auth = make_auth(http_client=persistent)
         response = make_response(
-            EveApiResponse.SUCCESS.value,
+            HTTPStatus.OK,
             json_data={"access_token": "tok", "refresh_token": "ref"},
         )
         persistent.post.return_value = response
@@ -184,7 +185,7 @@ class TestRefresh:
         auth = make_auth(
             access_token="old_access", refresh_token="expired_ref"
         )
-        response = make_response(EveApiResponse.INVALID_CREDS.value)
+        response = make_response(HTTPStatus.UNAUTHORIZED)
 
         mock_client = AsyncMock(spec=httpx.AsyncClient)
         mock_client.post.return_value = response
@@ -229,7 +230,7 @@ class TestRefresh:
         auth = make_auth(refresh_token="ref")
         tok = "new_tok"
         response = make_response(
-            EveApiResponse.SUCCESS.value,
+            HTTPStatus.OK,
             json_data={"access_token": tok},
         )
 
@@ -258,7 +259,7 @@ class TestRefresh:
         """Test refresh closes temporary client."""
         auth = make_auth(http_client=None, refresh_token="ref")
         response = make_response(
-            EveApiResponse.SUCCESS.value,
+            HTTPStatus.OK,
             json_data={"access_token": "new_tok"},
         )
 
@@ -275,7 +276,7 @@ class TestRefresh:
     async def test_refresh_closes_temporary_client_on_error():
         """Test refresh closes temporary client on error."""
         auth = make_auth(http_client=None, refresh_token="ref")
-        response = make_response(EveApiResponse.INVALID_CREDS.value)
+        response = make_response(HTTPStatus.UNAUTHORIZED)
 
         mock_client = AsyncMock(spec=httpx.AsyncClient)
         mock_client.post.return_value = response
@@ -426,7 +427,7 @@ class TestHandleErrorResponse:
     def test_raises_with_detail_from_json():
         """Test _handle_error_response raises AuthenticationError with details."""
         response = make_response(
-            EveApiResponse.BAD_REQUEST.value,
+            HTTPStatus.BAD_REQUEST,
             json_data={"detail": "Bad thing happened"},
         )
         with pytest.raises(AuthenticationError, match="Bad thing happened"):
@@ -438,7 +439,7 @@ class TestHandleErrorResponse:
     def test_raises_with_stringified_json_when_no_detail_key():
         """Test _handle_error_response raises AuthenticationError when no detail key."""
         response = make_response(
-            EveApiResponse.BAD_REQUEST.value, json_data={"error": "nope"}
+            HTTPStatus.BAD_REQUEST, json_data={"error": "nope"}
         )
         with pytest.raises(AuthenticationError, match="Authentication failed"):
             EVEAuth._handle_error_response(  # pylint: disable=protected-access
@@ -449,7 +450,7 @@ class TestHandleErrorResponse:
     def test_falls_back_to_response_text_when_json_fails():
         """Test fallback to response text when JSON fails."""
         response = MagicMock(spec=httpx.Response)
-        response.status_code = EveApiResponse.SERVICE_UNAVAILABLE.value
+        response.status_code = HTTPStatus.SERVICE_UNAVAILABLE
         response.text = "Service Unavailable"
         response.json.side_effect = ValueError("not json")
         with pytest.raises(AuthenticationError, match="Service Unavailable"):
@@ -461,12 +462,12 @@ class TestHandleErrorResponse:
     def test_falls_back_to_status_code_when_text_is_empty():
         """Test fallback to status code when text is empty."""
         response = MagicMock(spec=httpx.Response)
-        response.status_code = EveApiResponse.SERVICE_UNAVAILABLE.value
+        response.status_code = HTTPStatus.SERVICE_UNAVAILABLE
         response.text = ""
         response.json.side_effect = ValueError("not json")
         with pytest.raises(
             AuthenticationError,
-            match=f"HTTP {EveApiResponse.SERVICE_UNAVAILABLE.value}",
+            match=f"HTTP {HTTPStatus.SERVICE_UNAVAILABLE}",
         ):
             EVEAuth._handle_error_response(  # pylint: disable=protected-access
                 response

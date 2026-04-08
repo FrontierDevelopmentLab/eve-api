@@ -9,6 +9,8 @@ from typing import Any
 import httpx
 
 from .auth import EVEAuth
+from http import HTTPStatus
+
 from .exceptions import (
     APIError,
     ForbiddenError,
@@ -17,7 +19,6 @@ from .exceptions import (
     StreamError,
     ValidationError,
 )
-from .response import EveApiResponse
 
 
 class EVEClient:
@@ -212,7 +213,7 @@ class EVEClient:
         response = await self.request(
             "DELETE", path, params=params, timeout=timeout
         )
-        if response.status_code == EveApiResponse.SUCCESS_NO_CONTENT.value:
+        if response.status_code == HTTPStatus.NO_CONTENT:
             return None
         return response.json()
 
@@ -252,7 +253,7 @@ class EVEClient:
             headers=headers,
             timeout=timeout or 300.0,
         ) as response:
-            if response.status_code >= EveApiResponse.BAD_REQUEST.value:
+            if response.status_code >= HTTPStatus.BAD_REQUEST:
                 await response.aread()
                 self._handle_error(response)
 
@@ -326,7 +327,7 @@ class EVEClient:
             timeout=timeout or self._timeout,
         )
 
-        if response.status_code >= EveApiResponse.BAD_REQUEST.value:
+        if response.status_code >= HTTPStatus.BAD_REQUEST:
             self._handle_error(response)
 
         return response
@@ -355,12 +356,12 @@ class EVEClient:
         except Exception:  # pylint: disable=broad-exception-caught
             message = response.text or f"HTTP {status}"
 
-        if status == EveApiResponse.NOT_FOUND.value:
+        if status == HTTPStatus.NOT_FOUND:
             raise NotFoundError("resource", "unknown")
-        if status == EveApiResponse.FORBIDDEN.value:
+        if status == HTTPStatus.FORBIDDEN:
             raise ForbiddenError(message)
-        if status == EveApiResponse.BAD_REQUEST.value:
+        if status == HTTPStatus.BAD_REQUEST:
             raise ValidationError(message)
-        if status >= EveApiResponse.INTERNAL_SERVER_ERROR.value:
+        if status >= HTTPStatus.INTERNAL_SERVER_ERROR:
             raise ServerError(message, status_code=status)
         raise APIError(message, status_code=status)
