@@ -14,6 +14,7 @@ from .exceptions import (
     TokenExpiredError,
     ValidationError,
 )
+
 __all__ = [
     "__version__",
     "EVEClient",

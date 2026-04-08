@@ -1,11 +1,10 @@
 """Tests for the EVEClient."""
 
 import json
+from http import HTTPStatus
 
 import pytest
 from httpx import Response
-
-from http import HTTPStatus
 
 from eve_api import (
     APIError,
@@ -214,9 +213,7 @@ async def test_request_no_auth(mock_api, client: EVEClient):
     """Test EVEClient when auth_required=False"""
     status = "ok"
     mock_api.get("/health").mock(
-        return_value=Response(
-            HTTPStatus.OK, json={"status": status}
-        )
+        return_value=Response(HTTPStatus.OK, json={"status": status})
     )
 
     response = await client.request("GET", "/health", auth_required=False)
@@ -297,10 +294,7 @@ async def test_500_raises_server_error(
     with pytest.raises(ServerError) as exc_info:
         await authenticated_client.get("/broken")
 
-    assert (
-        exc_info.value.status_code
-        == HTTPStatus.INTERNAL_SERVER_ERROR
-    )
+    assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 async def test_422_raises_api_error(mock_api, authenticated_client: EVEClient):

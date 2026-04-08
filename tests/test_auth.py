@@ -1,12 +1,11 @@
 """Tests for the EVEAuth."""
 
 from datetime import datetime, timedelta, timezone
+from http import HTTPStatus
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
-
-from http import HTTPStatus
 
 from eve_api.auth import (
     AuthenticationError,

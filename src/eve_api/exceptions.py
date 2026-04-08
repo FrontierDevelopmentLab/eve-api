@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from http import HTTPStatus
+from typing import Any
 
 
 class EVEError(Exception):

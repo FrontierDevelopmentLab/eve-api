@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from http import HTTPStatus
 from typing import Any
 
 import httpx
-
-from http import HTTPStatus
 
 from .exceptions import (
     AuthenticationError,

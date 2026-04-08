@@ -1,10 +1,10 @@
 """Pytest configuration and fixtures for eve-api tests."""
 
+from http import HTTPStatus
+
 import pytest
 import respx
 from httpx import Response
-
-from http import HTTPStatus
 
 from eve_api import EVEClient
 

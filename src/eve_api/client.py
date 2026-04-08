@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import json as _json
 from collections.abc import AsyncIterator
+from http import HTTPStatus
 from typing import Any
 
 import httpx
 
 from .auth import EVEAuth
-from http import HTTPStatus
-
 from .exceptions import (
     APIError,
     ForbiddenError,
