@@ -21,13 +21,10 @@ from eve_api.auth import (
 
 def make_auth(*, access_token=None, refresh_token=None, http_client=None):
     """Return an Auth instance with controllable initial state."""
-    auth = EVEAuth.__new__(EVEAuth)
+    auth = EVEAuth("https://example.com")
     auth.access_token = access_token
     auth.refresh_token = refresh_token
-    auth._token_expiry = None  # pylint: disable=protected-access
     auth._http_client = http_client  # pylint: disable=protected-access
-    # Reproduce whatever base_url the real __init__ would set; adjust if needed.
-    auth.base_url = "https://example.com"
     return auth
 
 
