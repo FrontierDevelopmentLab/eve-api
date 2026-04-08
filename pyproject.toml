@@ -1,7 +1,7 @@
 [project]
 dynamic = ["version"]
 name = "eve-api"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 keywords = ["earth-observation", "eve", "esa", "api-client"]
 
 [tool.poetry]
@@ -34,7 +34,7 @@ version = "0.0.0"  # Placeholder; gets replaced dynamically by file
 Repository = "https://github.com/spaceml-org/eve-api"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<4"
+python = ">=3.11,<4"
 httpx = ">=0.27.0"
 
 [tool.poetry.group.dev.dependencies]
