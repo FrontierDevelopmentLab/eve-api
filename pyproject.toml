@@ -21,9 +21,9 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
     "Framework :: AsyncIO",
 ]
@@ -31,7 +31,7 @@ packages = [{include = "eve_api", from = "src"}]
 version = "0.0.0"  # Placeholder; gets replaced dynamically by file
 
 [project.urls]
-Repository = "https://github.com/spaceml-org/eve-api"
+Repository = "https://github.com/FrontierDevelopmentLab/eve-api"
 
 [tool.poetry.dependencies]
 python = ">=3.11,<4"
@@ -51,15 +51,13 @@ pytest-cov = ">=4.0.0"
 pytest-testdox = "^3.1.0"
 pytest-mock = "^3.14.0"
 detect-secrets = "^1.5.0"
-types-requests = "^2.32.4.20250611"
 pytest-env = "^1.1.5"
-types-toml = "^0.10.8.20240310"
 respx = ">=0.21.0"
 pylint-per-file-ignores = "^3.2.0"
 
 [tool.black]
 line-length = 79
-target-version = ['py311']
+target-version = ['py312']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -103,7 +101,7 @@ testpaths = ["tests"]
 addopts = "-v --tb=short --basetemp=/tmp/pytest"
 
 [tool.coverage.run]
-source = ["src", "tests"]
+source = ["src"]
 omit = ["tests/**/conftest.py", "tests/*"]
 data_file = "/tmp/eve_api/.coverage"
 
@@ -140,17 +138,6 @@ vcs = "none"
 [tool.poetry-dynamic-versioning.from-file]
 source = "src/eve_api/_version.py"
 pattern = "^__version__\\s*=\\s*[\"']?(\\d+\\.\\d+\\.\\d+)[\"']?"
-
-# [tool.hatch.build.targets.wheel]
-# packages = ["src/eve_api"]
-
-# [tool.ruff]
-# line-length = 100
-# target-version = "py310"
-
-# [tool.ruff.lint]
-# select = ["E", "F", "I", "W"]
-# ignore = ["E501"]
 
 [build-system]
 requires = ["poetry-core", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
