@@ -39,6 +39,7 @@ class EVEClient:
     """
 
     _DEFAULT_TIMEOUT = 30.0
+    _SSE_DONE_SENTINEL = "[DONE]"
 
     def __init__(
         self,
@@ -260,9 +261,7 @@ class EVEClient:
                 if not line or not line.startswith("data: "):
                     continue
 
-                if (  # pylint: disable=magic-value-comparison
-                    data_str := line[6:]
-                ) == "[DONE]":
+                if (data_str := line[6:]) == self._SSE_DONE_SENTINEL:
                     return
 
                 try:

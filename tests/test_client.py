@@ -21,22 +21,30 @@ from eve_api import (
 
 
 class StatusEvent(TypedDict):
+    """SSE event emitted while the server is still working."""
+
     type: Literal["status"]
     content: str
 
 
 class TokenEvent(TypedDict):
+    """SSE event carrying an incremental token of the streamed response."""
+
     type: Literal["token"]
     content: str
 
 
 class FinalEvent(TypedDict):
+    """SSE event marking the final, complete response."""
+
     type: Literal["final"]
     content: str
     message_id: str
 
 
 class ErrorEvent(TypedDict):
+    """SSE event indicating the stream terminated with an error."""
+
     type: Literal["error"]
     content: str
 
