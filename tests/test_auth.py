@@ -201,7 +201,7 @@ class TestRefresh:
     async def test_refresh_unexpected_status_calls_handle_error():
         """Test that refresh on unexpected status calls _handle_error."""
         auth = make_auth(refresh_token="ref")
-        response = make_response(500)
+        response = make_response(HTTPStatus.INTERNAL_SERVER_ERROR)
 
         mock_client = AsyncMock(spec=httpx.AsyncClient)
         mock_client.post.return_value = response
@@ -449,7 +449,7 @@ class TestHandleErrorResponse:
         response.status_code = HTTPStatus.SERVICE_UNAVAILABLE
         response.text = "Service Unavailable"
         response.json.side_effect = ValueError("not json")
-        with pytest.raises(AuthenticationError, match="Service Unavailable"):
+        with pytest.raises(AuthenticationError, match=response.text):
             EVEAuth._handle_error_response(  # pylint: disable=protected-access
                 response
             )
