@@ -11,8 +11,8 @@ readme = "README.md"
 authors = [
   "r-spiewak <63987228+r-spiewak@users.noreply.github.com>",
   "dead-water <james.walsh@trillium.tech>",
-  "rramosp",
-  "will-fawcett-trillium"
+  "rramosp <13835425+rramosp@users.noreply.github.com>",
+  "will-fawcett-trillium <192252394+will-fawcett-trillium@users.noreply.github.com>"
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
