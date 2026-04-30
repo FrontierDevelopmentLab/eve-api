@@ -2,6 +2,7 @@
 
 import json
 from http import HTTPStatus
+from typing import Literal, TypedDict
 
 import pytest
 from httpx import Response
@@ -17,6 +18,30 @@ from eve_api import (
     StreamError,
     ValidationError,
 )
+
+
+class StatusEvent(TypedDict):
+    type: Literal["status"]
+    content: str
+
+
+class TokenEvent(TypedDict):
+    type: Literal["token"]
+    content: str
+
+
+class FinalEvent(TypedDict):
+    type: Literal["final"]
+    content: str
+    message_id: str
+
+
+class ErrorEvent(TypedDict):
+    type: Literal["error"]
+    content: str
+
+
+SSEEvent = StatusEvent | TokenEvent | FinalEvent | ErrorEvent
 
 # --- Authentication ---
 
@@ -336,7 +361,7 @@ async def test_response_missing_detail_raises_api_error(
 # --- Streaming ---
 
 
-def _sse_response(*events: dict, done: bool = True) -> Response:
+def _sse_response(*events: SSEEvent, done: bool = True) -> Response:
     """Build a Response whose body is SSE-formatted lines."""
     lines = []
     for event in events:
@@ -355,11 +380,11 @@ async def test_stream(mock_api, authenticated_client: EVEClient):
     """Test streaming"""
     status_text = "status"
     final_text = "final"
-    events = [
-        {"type": status_text, "content": "Searching..."},
-        {"type": "token", "content": "Hello"},
-        {"type": "token", "content": " world"},
-        {"type": final_text, "content": "Hello world", "message_id": "m-1"},
+    events: list[SSEEvent] = [
+        StatusEvent(type="status", content="Searching..."),
+        TokenEvent(type="token", content="Hello"),
+        TokenEvent(type="token", content=" world"),
+        FinalEvent(type="final", content="Hello world", message_id="m-1"),
     ]
     mock_api.post("/conversations/c-1/stream_messages").mock(
         return_value=_sse_response(*events)
@@ -383,9 +408,9 @@ async def test_stream_stops_on_error_event(
 ):
     """Test that streaming stops on an error event"""
     error_text = "error"
-    events = [
-        {"type": "token", "content": "partial"},
-        {"type": error_text, "content": "Something went wrong"},
+    events: list[SSEEvent] = [
+        TokenEvent(type="token", content="partial"),
+        ErrorEvent(type="error", content="Something went wrong"),
     ]
     mock_api.post("/conversations/c-1/stream_messages").mock(
         return_value=_sse_response(*events, done=False)
@@ -420,9 +445,9 @@ async def test_stream_error_status(mock_api, authenticated_client: EVEClient):
 
 async def test_stream_done_no_error(mock_api, authenticated_client: EVEClient):
     """Test streaming when it returns data: [DONE] with no errors"""
-    events = [
-        {"type": "token", "content": "Hello"},
-        {"type": "token", "content": " world"},
+    events: list[SSEEvent] = [
+        TokenEvent(type="token", content="Hello"),
+        TokenEvent(type="token", content=" world"),
     ]
     mock_api.post("/conversations/c-1/stream_messages").mock(
         return_value=_sse_response(*events)
@@ -443,9 +468,9 @@ async def test_stream_error_invalid_json(
     mock_api, authenticated_client: EVEClient
 ):
     """Test status from stream error"""
-    events = [
-        {"type": "token", "content": "Hello"},
-        {"type": "token", "content": " world"},
+    events: list[SSEEvent] = [
+        TokenEvent(type="token", content="Hello"),
+        TokenEvent(type="token", content=" world"),
     ]
     lines = []
     for event in events:
