@@ -236,7 +236,7 @@ async def test_404_raises_not_found(mock_api, authenticated_client: EVEClient):
         )
     )
 
-    with pytest.raises(NotFoundError) as exc_info:
+    with pytest.raises(NotFoundError, match="Not found") as exc_info:
         await authenticated_client.get("/conversations/missing")
 
     assert exc_info.value.status_code == HTTPStatus.NOT_FOUND

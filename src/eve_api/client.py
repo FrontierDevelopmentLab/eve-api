@@ -356,7 +356,7 @@ class EVEClient:
             message = response.text or f"HTTP {status}"
 
         if status == HTTPStatus.NOT_FOUND:
-            raise NotFoundError("resource", "unknown")
+            raise NotFoundError(message)
         if status == HTTPStatus.FORBIDDEN:
             raise ForbiddenError(message)
         if status == HTTPStatus.BAD_REQUEST:
