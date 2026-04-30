@@ -58,17 +58,22 @@ class APIError(EVEError):
 class NotFoundError(APIError):
     """Raised when a requested resource is not found (404)."""
 
-    def __init__(self, resource: str, resource_id: str) -> None:
+    def __init__(
+        self,
+        message: str = "Resource not found",
+        details: dict[str, Any] | None = None,
+    ) -> None:
         """Initialise the not found error.
 
         Args:
-            resource: Type of resource (e.g., 'conversation', 'document').
-            resource_id: ID of the resource that was not found.
+            message: Human-readable error message (typically the server's
+                ``detail`` field).
+            details: Additional error details from the response body.
         """
         super().__init__(
-            f"{resource.title()} not found: {resource_id}",
+            message,
             status_code=HTTPStatus.NOT_FOUND,
-            details={"resource": resource, "id": resource_id},
+            details=details,
         )
 
 
