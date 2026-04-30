@@ -63,7 +63,7 @@ repos:
       pass_filenames: false
       verbose: true
       args:
-        - "--fail-under=80"
+        - "--fail-under=100"
         - "--skip-empty"
         - "--skip-covered"
         - "--show-missing"
