@@ -107,8 +107,12 @@ pre-commit hooks, and PR conventions.
 ## Acknowledgements
 
 Originally created by the GeoSTARS (STARS: Scientific Testing of Agentic Reasoning) team:
-([Raúl Ramos](https://github.com/rramosp), [James Walsh](https://github.com/dead-water),
-[Will Fawcett](https://github.com/will-fawcett), and [Russell Spiewak](https://github.com/r-spiewak)).
+(
+    [James Walsh](https://github.com/dead-water),
+  [Russell Spiewak](https://github.com/r-spiewak),
+    [Will Fawcett](https://github.com/will-fawcett),
+   and   [Raúl Ramos](https://github.com/rramosp)
+ ).
 Supported by the ESA Phi-Lab as part of Trillium Technologies Earth Systems Lab [ESL](https://eslab.ai/).
 
 
