@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from http import HTTPStatus
 from typing import Any
 
 import httpx
 
-from eve_api.exceptions import AuthenticationError, NotAuthenticatedError, TokenExpiredError
+from .exceptions import (
+    AuthenticationError,
+    NotAuthenticatedError,
+    TokenExpiredError,
+)
 
 
 class EVEAuth:
@@ -75,17 +80,17 @@ class EVEAuth:
         client = await self._get_client()
         should_close = self._http_client is None
 
-        try:
+        try:  # pylint: disable=too-many-try-statements
             response = await client.post(
                 "/login",
                 json={"email": email, "password": password},
             )
 
-            if response.status_code == 401:
+            if response.status_code == HTTPStatus.UNAUTHORIZED:
                 raise AuthenticationError("Invalid email or password")
-            elif response.status_code == 403:
+            if response.status_code == HTTPStatus.FORBIDDEN:
                 raise AuthenticationError("Account not activated")
-            elif response.status_code != 200:
+            if response.status_code != HTTPStatus.OK:
                 self._handle_error_response(response)
 
             data = response.json()
@@ -103,30 +108,36 @@ class EVEAuth:
             NotAuthenticatedError: If no refresh token is available.
         """
         if not self.refresh_token:
-            raise NotAuthenticatedError("No refresh token available. Please login first.")
+            raise NotAuthenticatedError(
+                "No refresh token available. Please login first."
+            )
 
         client = await self._get_client()
         should_close = self._http_client is None
 
-        try:
+        try:  # pylint: disable=too-many-try-statements
             response = await client.post(
                 "/refresh",
                 json={"refresh_token": self.refresh_token},
             )
 
-            if response.status_code == 401:
+            if response.status_code == HTTPStatus.UNAUTHORIZED:
                 # Refresh token expired
                 self.access_token = None
                 self.refresh_token = None
                 self._token_expiry = None
-                raise TokenExpiredError("Refresh token expired. Please login again.")
-            elif response.status_code != 200:
+                raise TokenExpiredError(
+                    "Refresh token expired. Please login again."
+                )
+            if response.status_code != HTTPStatus.OK:
                 self._handle_error_response(response)
 
             data = response.json()
             self.access_token = data.get("access_token")
             # Update expiry time
-            self._token_expiry = datetime.now(timezone.utc) + self._DEFAULT_EXPIRY
+            self._token_expiry = (
+                datetime.now(timezone.utc) + self._DEFAULT_EXPIRY
+            )
 
         finally:
             if should_close:
@@ -142,7 +153,9 @@ class EVEAuth:
             NotAuthenticatedError: If not logged in.
         """
         if not self.access_token:
-            raise NotAuthenticatedError("Not authenticated. Please login first.")
+            raise NotAuthenticatedError(
+                "Not authenticated. Please login first."
+            )
         return {"Authorization": f"Bearer {self.access_token}"}
 
     async def ensure_authenticated(self) -> None:
@@ -157,7 +170,9 @@ class EVEAuth:
             TokenExpiredError: If token refresh fails.
         """
         if not self.access_token:
-            raise NotAuthenticatedError("Not authenticated. Please login first.")
+            raise NotAuthenticatedError(
+                "Not authenticated. Please login first."
+            )
 
         if self._should_refresh():
             await self.refresh()
@@ -193,7 +208,8 @@ class EVEAuth:
         # Set expiry time (default 1 hour from now)
         self._token_expiry = datetime.now(timezone.utc) + self._DEFAULT_EXPIRY
 
-    def _handle_error_response(self, response: httpx.Response) -> None:
+    @staticmethod
+    def _handle_error_response(response: httpx.Response) -> None:
         """Handle error responses from auth endpoints.
 
         Args:
@@ -202,10 +218,10 @@ class EVEAuth:
         Raises:
             AuthenticationError: With details from response.
         """
-        try:
+        try:  # pylint: disable=too-many-try-statements
             data = response.json()
             message = data.get("detail", str(data))
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             message = response.text or f"HTTP {response.status_code}"
 
         raise AuthenticationError(f"Authentication failed: {message}")

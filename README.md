@@ -1,11 +1,26 @@
 # eve-api
 
+[![CI](https://github.com/FrontierDevelopmentLab/eve-api/actions/workflows/main.yml/badge.svg)](https://github.com/FrontierDevelopmentLab/eve-api/actions/workflows/main.yml)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](https://github.com/FrontierDevelopmentLab/eve-api)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Minimal authenticated HTTP client for the EVE (Earth Virtual Expert) API.
 
 Provides login, automatic JWT token refresh, and generic HTTP methods that return plain dicts. No domain-specific wrappers or Pydantic models.
 
 ## Installation
 
+<!-- 
+```bash
+pip install eve-api
+``` 
+-->
+
+For the development version:
+```bash
+poetry install
+```
+or
 ```bash
 pip install -e ".[dev]"
 ```

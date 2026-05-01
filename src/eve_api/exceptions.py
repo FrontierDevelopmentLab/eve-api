@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+from http import HTTPStatus
 from typing import Any
 
 
 class EVEError(Exception):
     """Base exception for all EVE API client errors."""
 
-    def __init__(self, message: str, details: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self, message: str, details: dict[str, Any] | None = None
+    ) -> None:
         """Initialise the error.
 
         Args:
@@ -23,19 +26,13 @@ class EVEError(Exception):
 class AuthenticationError(EVEError):
     """Raised when authentication fails."""
 
-    pass
-
 
 class TokenExpiredError(AuthenticationError):
     """Raised when the access token has expired and refresh failed."""
 
-    pass
-
 
 class NotAuthenticatedError(AuthenticationError):
     """Raised when attempting an operation that requires authentication."""
-
-    pass
 
 
 class APIError(EVEError):
@@ -61,17 +58,22 @@ class APIError(EVEError):
 class NotFoundError(APIError):
     """Raised when a requested resource is not found (404)."""
 
-    def __init__(self, resource: str, resource_id: str) -> None:
+    def __init__(
+        self,
+        message: str = "Resource not found",
+        details: dict[str, Any] | None = None,
+    ) -> None:
         """Initialise the not found error.
 
         Args:
-            resource: Type of resource (e.g., 'conversation', 'document').
-            resource_id: ID of the resource that was not found.
+            message: Human-readable error message (typically the server's
+                ``detail`` field).
+            details: Additional error details from the response body.
         """
         super().__init__(
-            f"{resource.title()} not found: {resource_id}",
-            status_code=404,
-            details={"resource": resource, "id": resource_id},
+            message,
+            status_code=HTTPStatus.NOT_FOUND,
+            details=details,
         )
 
 
@@ -84,20 +86,26 @@ class ForbiddenError(APIError):
         Args:
             message: Human-readable error message.
         """
-        super().__init__(message, status_code=403)
+        super().__init__(message, status_code=HTTPStatus.FORBIDDEN)
 
 
 class ValidationError(APIError):
     """Raised when request validation fails (400)."""
 
-    def __init__(self, message: str, details: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self, message: str, details: dict[str, Any] | None = None
+    ) -> None:
         """Initialise the validation error.
 
         Args:
             message: Human-readable error message.
             details: Validation error details.
         """
-        super().__init__(message, status_code=400, details=details)
+        super().__init__(
+            message,
+            status_code=HTTPStatus.BAD_REQUEST,
+            details=details,
+        )
 
 
 class ServerError(APIError):
@@ -106,7 +114,7 @@ class ServerError(APIError):
     def __init__(
         self,
         message: str = "Internal server error",
-        status_code: int = 500,
+        status_code: int = HTTPStatus.INTERNAL_SERVER_ERROR,
         details: dict[str, Any] | None = None,
     ) -> None:
         """Initialise the server error.
@@ -121,5 +129,3 @@ class ServerError(APIError):
 
 class StreamError(EVEError):
     """Raised when an error occurs during streaming."""
-
-    pass

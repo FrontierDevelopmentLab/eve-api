@@ -1,8 +1,8 @@
 """eve-api: Minimal authenticated HTTP client for the EVE API."""
 
-from eve_api._version import __version__
-from eve_api.client import EVEClient
-from eve_api.exceptions import (
+from ._version import __version__
+from .client import EVEClient
+from .exceptions import (
     APIError,
     AuthenticationError,
     EVEError,

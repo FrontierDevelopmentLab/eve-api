@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import json as _json
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from http import HTTPStatus
+from typing import Any
 
 import httpx
 
-from eve_api.auth import EVEAuth
-from eve_api.exceptions import (
+from .auth import EVEAuth
+from .exceptions import (
     APIError,
     ForbiddenError,
     NotFoundError,
@@ -37,6 +39,7 @@ class EVEClient:
     """
 
     _DEFAULT_TIMEOUT = 30.0
+    _SSE_DONE_SENTINEL = "[DONE]"
 
     def __init__(
         self,
@@ -140,7 +143,9 @@ class EVEClient:
         Returns:
             Parsed JSON response (dict or list).
         """
-        response = await self.request("GET", path, params=params, timeout=timeout)
+        response = await self.request(
+            "GET", path, params=params, timeout=timeout
+        )
         return response.json()
 
     async def post(
@@ -161,7 +166,9 @@ class EVEClient:
         Returns:
             Parsed JSON response (dict or list).
         """
-        response = await self.request("POST", path, json=json, params=params, timeout=timeout)
+        response = await self.request(
+            "POST", path, json=json, params=params, timeout=timeout
+        )
         return response.json()
 
     async def patch(
@@ -182,7 +189,9 @@ class EVEClient:
         Returns:
             Parsed JSON response (dict or list).
         """
-        response = await self.request("PATCH", path, json=json, params=params, timeout=timeout)
+        response = await self.request(
+            "PATCH", path, json=json, params=params, timeout=timeout
+        )
         return response.json()
 
     async def delete(
@@ -201,8 +210,10 @@ class EVEClient:
         Returns:
             Parsed JSON response (dict or list), or None for 204 responses.
         """
-        response = await self.request("DELETE", path, params=params, timeout=timeout)
-        if response.status_code == 204:
+        response = await self.request(
+            "DELETE", path, params=params, timeout=timeout
+        )
+        if response.status_code == HTTPStatus.NO_CONTENT:
             return None
         return response.json()
 
@@ -242,7 +253,7 @@ class EVEClient:
             headers=headers,
             timeout=timeout or 300.0,
         ) as response:
-            if response.status_code >= 400:
+            if response.status_code >= HTTPStatus.BAD_REQUEST:
                 await response.aread()
                 self._handle_error(response)
 
@@ -250,25 +261,27 @@ class EVEClient:
                 if not line or not line.startswith("data: "):
                     continue
 
-                data_str = line[6:]
-                if data_str == "[DONE]":
+                if (data_str := line[6:]) == self._SSE_DONE_SENTINEL:
                     return
 
                 try:
                     event = _json.loads(data_str)
                 except _json.JSONDecodeError as e:
-                    raise StreamError(f"Failed to parse SSE data: {e}")
+                    raise StreamError(f"Failed to parse SSE data: {e}") from e
 
                 yield event
 
                 # Stop on terminal events
-                event_type = event.get("type", "")
-                if event_type in ("final", "error", "stopped"):
+                if event.get("type", "") in {
+                    "final",
+                    "error",
+                    "stopped",
+                }:
                     return
 
     # Low-level request method
 
-    async def request(
+    async def request(  # pylint: disable=too-many-positional-arguments
         self,
         method: str,
         path: str,
@@ -312,12 +325,13 @@ class EVEClient:
             timeout=timeout or self._timeout,
         )
 
-        if response.status_code >= 400:
+        if response.status_code >= HTTPStatus.BAD_REQUEST:
             self._handle_error(response)
 
         return response
 
-    def _handle_error(self, response: httpx.Response) -> None:
+    @staticmethod
+    def _handle_error(response: httpx.Response) -> None:
         """Handle error responses.
 
         Args:
@@ -332,21 +346,20 @@ class EVEClient:
         """
         status = response.status_code
 
-        try:
+        try:  # pylint: disable=too-many-try-statements
             data = response.json()
             message = data.get("detail", str(data))
             if isinstance(message, list):
                 message = "; ".join(str(e) for e in message)
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             message = response.text or f"HTTP {status}"
 
-        if status == 404:
-            raise NotFoundError("resource", "unknown")
-        elif status == 403:
+        if status == HTTPStatus.NOT_FOUND:
+            raise NotFoundError(message)
+        if status == HTTPStatus.FORBIDDEN:
             raise ForbiddenError(message)
-        elif status == 400:
+        if status == HTTPStatus.BAD_REQUEST:
             raise ValidationError(message)
-        elif status >= 500:
+        if status >= HTTPStatus.INTERNAL_SERVER_ERROR:
             raise ServerError(message, status_code=status)
-        else:
-            raise APIError(message, status_code=status)
+        raise APIError(message, status_code=status)
