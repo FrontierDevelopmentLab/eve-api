@@ -114,7 +114,8 @@ Originally created by the GeoSTARS (STARS: Scientific Testing of Agentic Reasoni
     [James Walsh](https://github.com/dead-water),
   [Russell Spiewak](https://github.com/r-spiewak),
     [Will Fawcett](https://github.com/will-fawcett),
-   and   [Raúl Ramos](https://github.com/rramosp)
+      [Raúl Ramos](https://github.com/rramosp),
+and [Poliana Santana](https://github.com/psantana-trillium)
  ).
 Supported by the ESA Phi-Lab as part of Trillium Technologies Earth Systems Lab [ESL](https://eslab.ai/).
 
