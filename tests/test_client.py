@@ -332,10 +332,9 @@ async def test_500_raises_server_error(
 
 async def test_422_raises_api_error(mock_api, authenticated_client: EVEClient):
     """Test that 422 response code raises APIError"""
-    unprocessable_entity = 422
     mock_api.post("/conversations").mock(
         return_value=Response(
-            unprocessable_entity,
+            HTTPStatus.UNPROCESSABLE_ENTITY,
             json={
                 "detail": [{"msg": "field required", "type": "missing"}],
             },
@@ -345,7 +344,7 @@ async def test_422_raises_api_error(mock_api, authenticated_client: EVEClient):
     with pytest.raises(APIError) as exc_info:
         await authenticated_client.post("/conversations", json={})
 
-    assert exc_info.value.status_code == unprocessable_entity
+    assert exc_info.value.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 
 async def test_response_missing_detail_raises_api_error(
